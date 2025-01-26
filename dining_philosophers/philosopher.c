@@ -31,6 +31,7 @@ void release_right_fork(Philosopher *philosopher) {
 
 int eat(Philosopher *philosopher) {
   struct timespec eat_duration = {1, 0};
+  struct timespec sleep_duration = {0, 5};
 
   for (;;) {
     acquire_forks(philosopher);
@@ -41,6 +42,7 @@ int eat(Philosopher *philosopher) {
     thrd_sleep(&eat_duration, NULL);
     release_left_fork(philosopher);
     release_right_fork(philosopher);
+    thrd_sleep(&sleep_duration, NULL); // process of thinking
   }
   return 0;
 }
