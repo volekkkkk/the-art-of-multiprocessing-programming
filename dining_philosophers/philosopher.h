@@ -11,7 +11,8 @@ typedef struct Philosopher {
   int meals_count;
 } Philosopher;
 
-void acquireForks(Philosopher *philosopher);
-void releaseForks(Philosopher *philosopher);
+void acquire_forks(Philosopher *philosopher);
+void release_left_fork(Philosopher *philosopher);
+void release_right_fork(Philosopher *philosopher);
 
 int eat(Philosopher *philosopher);

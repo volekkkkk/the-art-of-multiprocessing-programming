@@ -8,7 +8,7 @@
 #include <time.h>
 
 #ifndef SEATS_CNT
-#define SEATS_CNT 5
+#define SEATS_CNT 15
 #endif
 
 Philosopher *philosophers[SEATS_CNT];
@@ -39,6 +39,7 @@ int init_forks(Fork *forks[]) {
     }
     forks[i] = fork;
     fork->id = i;
+    fork->used_by_phil_id = -1;
   }
   return 0;
 }
