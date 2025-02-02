@@ -22,13 +22,24 @@ Solution: [Dining Philosophers](https://github.com/volekkkkk/the-art-of-multipro
 
 Exercise 1.2. For each of the following, state whether it is a safety or liveness property. 
 Identify the bad or good thing of interest.
-1. Patrons are served in the order they arrive.
-2. Anything that go wrong, will go wrong.
-3. No one wants to die.
-4. Two things are certain: death and taxes.
-5. As soon as one is born, one starts dying.
-6. If an interrupt occurs, then a message is printed within one second.
-7. If an interrupt occurs, then a message is printed.
-8. I will finish what Darth Vader has started.
-9. The cost of living never decreases.
-10. You can always tell a Harvard man.
+
+1. Patrons are served in the order they arrive. - [Safety]
+    Bad thing: a newer patron is prioritized over older one.  
+2. Anything that go wrong, will go wrong. - [Liveness]
+    Good thing: something that go wrong, eventually go wrong.
+3. No one wants to die. - [Safety]
+    Bad thing: state of death.
+4. Two things are certain: death and taxes. - [Liveness]
+    Good thing: eventually you will die and pay taxes.
+5. As soon as one is born, one starts dying. - [Liveness]
+    Good thing: an one will eventually die.
+6. If an interrupt occurs, then a message is printed within one second. - [Safety]
+    Bad thing: a message is printed in descrete time.
+7. If an interrupt occurs, then a message is printed. - [Liveness]
+    Good thing: a message is eventually printed.
+8. I will finish what Darth Vader has started. - [Liveness]
+    Good thing: the work of Darth Vader will progress.
+9. The cost of living never decreases. - [Safety]
+    Good thing: the cost of living decreses at no point in time.
+10. You can always tell a Harvard man. - [Liveness]
+    Good thing: you will eventually recognize a Harvard man.
