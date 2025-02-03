@@ -43,3 +43,15 @@ Identify the bad or good thing of interest.
     Good thing: the cost of living decreses at no point in time.
 10. You can always tell a Harvard man. - [Liveness]
     Good thing: you will eventually recognize a Harvard man.
+
+
+Exercise 1.3. In the producer-consumer fable, we assumed that Bob can see whether the can on Alice's windowsill is up or down.
+Design a producer-consumer protocol using cans and strings that works even if Bob cannot see the state of Alice's can (this
+is how real-world interrupt bits work).
+
+Bob and Alice have two separate cans connected by a string.
+At first, there is no food in the yard. Alice's can is hanging from the windowsill, and Bob's is standing on the windowsill.
+Bob puts the food in the yard and throws his can off the windowsill, so that the can on the other side is pulled up to the windowsill and stands on it.
+When there is no food in the yard, Alice drops the can from the windowsill. The string stretches, and Bob's can 
+is pulled up onto the windowsill. In this way, Bob relies on the state of his can and does not have to see Alice's can. 
+
