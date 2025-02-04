@@ -55,3 +55,32 @@ Bob puts the food in the yard and throws his can off the windowsill, so that the
 When there is no food in the yard, Alice drops the can from the windowsill. The string stretches, and Bob's can 
 is pulled up onto the windowsill. In this way, Bob relies on the state of his can and does not have to see Alice's can. 
 
+
+Exercise 1.4. You are one of P recently arrested prisoners. The warden, a deranged computer scientist, makes the following announcement:
+> You may meet together today and plan a strategy, but after today you will be in
+> isolated cells and have no communication with one another.
+> I have set up a “switch room” which contains a light switch, which is either on or
+> off. The switch is not connected to anything.
+> Every now and then, I will select one prisoner at random to enter the “switch
+> room.” This prisoner may throw the switch (from on to off, or vice-versa), or may
+> leave the switch unchanged. Nobody else will ever enter this room.
+> Each prisoner will visit the switch room arbitrarily often. More precisely, for any
+> N, eventually each of you will visit the switch room at least N times.
+> At any time, any of you may declare: “we have all visited the switch room at least
+> once.” If the claim is correct, I will set you free. If the claim is incorrect, I will feed
+> all of you to the crocodiles. Choose wisely!
+Hint: not all prisoners need to do the same thing.
+
+- Devise a winning strategy when you know that the initial state of the switch
+is off.
+
+Solution: One prisoner is a counter. He turns off the light in the room if it is on and counts
+each time he does so. When he turns off the light (P-1) times, he declares that all the prisoners
+have been in the room. Each of the other prisoners must turn on the light when he enters the room
+and the switch is off (and he does this only once: if a prisoner turns on the light and then re-enters
+the room, no new actions occur).
+
+- Devise a winning strategy when you do not know whether the initial state of
+the switch is on or off.
+
+Solution: the same as above, but each prisoner turns on light twice, condition for exit: 2(P-1) - 1.
