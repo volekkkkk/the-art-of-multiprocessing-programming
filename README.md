@@ -84,3 +84,15 @@ the room, no new actions occur).
 the switch is on or off.
 
 Solution: the same as above, but each prisoner turns on light twice, condition for exit: 2(P-1) - 1.
+
+Exercise 1.5. The same warden has a different idea. He orders the prisoners to stand in line, and places 
+red and blue hats on each of their heads. No prisoner knows the color of his own hat, or the color of any
+hat behind him, but he can see the hats of the prisoners in front. The warden starts at the back of the 
+line and asks each prisoner to guess the color of his own hat. The prisoner can answer only “red” or “blue.” 
+If he gives the wrong answer, he is fed to the crocodiles. If he answers correctly, he is freed. Each 
+prisoner can hear the answer of the prisoners behind him, but cannot tell whether that prisoner was correct.
+The prisoners are allowed to consult and agree on a strategy beforehand (while the warden listens in) but 
+after being lined up, they cannot communicate any other way besides their answer of “red” or “blue.”
+Devise a strategy that allows at least P − 1 of P prisoners to be freed.
+
+Solution: 
