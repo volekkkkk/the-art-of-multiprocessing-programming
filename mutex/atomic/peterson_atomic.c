@@ -6,13 +6,22 @@ _Atomic int flag_atomic[2] = {0, 0};
 void lock_atomic(int thread_id) {
   int other = 1 - thread_id;
 
-  atomic_store_explicit(&flag_atomic[thread_id], 1,
-                        memory_order_seq_cst); // "I'm interested"
-  atomic_store_explicit(&victim_atomic, thread_id,
-                        memory_order_seq_cst); // "I'm willing to wait"
+  // atomic_store_explicit(&flag_atomic[thread_id], 1,
+  //                       memory_order_seq_cst); // "I'm interested"
+  // atomic_store_explicit(&victim_atomic, thread_id,
+  //                       memory_order_seq_cst); // "I'm willing to wait"
 
-  while (atomic_load_explicit(&flag_atomic[other], memory_order_seq_cst) == 1 &&
-         atomic_load_explicit(&victim_atomic, memory_order_seq_cst) ==
+  // while (atomic_load_explicit(&flag_atomic[other], memory_order_seq_cst) == 1 &&
+  //        atomic_load_explicit(&victim_atomic, memory_order_seq_cst) ==
+  //            thread_id) {
+
+  atomic_store_explicit(&flag_atomic[thread_id], 1,
+                        memory_order_release); // "I'm interested"
+  atomic_store_explicit(&victim_atomic, thread_id,
+                        memory_order_release); // "I'm willing to wait"
+  
+  while (atomic_load_explicit(&flag_atomic[other], memory_order_consume) == 1 &&
+         atomic_load_explicit(&victim_atomic, memory_order_consume) ==
              thread_id) {
     // spin
   }
