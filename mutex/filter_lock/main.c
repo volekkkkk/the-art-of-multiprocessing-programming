@@ -58,7 +58,7 @@ double benchmark_threads(int threads_num, int iterations) {
 
 int main(int argc, char *argv[]) {
   int iterations = 1000000;
-  int thread_counts[] = {2, 3, 5, 8, 10};
+  int thread_counts[] = {2, 3, 5, 8, 10, 20};
   int num_tests = sizeof(thread_counts) / sizeof(thread_counts[0]);
 
   if (argc > 1) {
