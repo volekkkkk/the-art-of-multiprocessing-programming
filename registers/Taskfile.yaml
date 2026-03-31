@@ -1,0 +1,20 @@
+version: '3'
+
+tasks:
+
+  build:
+    desc: Compile test_constructions
+    cmds:
+      - mkdir -p build
+      - gcc -pthread -O0 -Wall -Wextra -o build/test_constructions test_constructions.c
+    generates:
+      - build/test_constructions
+
+  run:
+    desc: Build and run test_constructions
+    deps: [build]
+    cmd: ./build/test_constructions
+
+  clean:
+    desc: Remove build artifacts
+    cmd: rm -rf build/

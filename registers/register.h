@@ -1,0 +1,40 @@
+#ifndef REGISTER_H
+#define REGISTER_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdatomic.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <assert.h>
+
+// ---------------------------------------------------------------------------
+// Thread ID management
+// ---------------------------------------------------------------------------
+// Each thread has a unique ID in [0, N).
+// We use a thread-local variable that each thread sets before using registers.
+
+static _Thread_local int thread_id = -1;
+
+static inline void set_thread_id(int id) { thread_id = id; }
+static inline int  get_thread_id(void)   { return thread_id; }
+
+#define MAX_THREADS 8
+
+// ---------------------------------------------------------------------------
+// Stamped value — used by atomic register constructions
+// ---------------------------------------------------------------------------
+typedef struct {
+    long stamp;
+    int  value;
+} StampedValue;
+
+static inline StampedValue stamped_max(StampedValue a, StampedValue b) {
+    return (a.stamp > b.stamp) ? a : b;
+}
+
+#define STAMPED_INIT { .stamp = 0, .value = 0 }
+
+#endif // REGISTER_H
