@@ -12,7 +12,6 @@
 //   - If read DOES overlap write → the reader's SRSW register is being
 //     written, so it could return any value in range
 //
-// EXERCISE: Fill in read() and write()
 // ============================================================================
 
 #ifndef MRSW_SAFE_BOOL_H

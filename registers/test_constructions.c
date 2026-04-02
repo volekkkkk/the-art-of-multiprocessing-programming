@@ -2,6 +2,7 @@
 // Compile: gcc -pthread -o test_constructions test_constructions.c
 #include "mrsw_safe_bool.h"
 #include "mrsw_regular_bool.h"
+#include "mrsw_regular_mval.h"
 #include <unistd.h>
 
 // ============================================================================
@@ -72,6 +73,7 @@ void test_mrsw_regular_bool(void) {
     printf("[MRSW Regular Bool] After write(true) again: read = %s (expect true)\n",
            val ? "true" : "false");
 
+    // Write false
     mrsw_regular_bool_write(&reg, false);
     val = mrsw_regular_bool_read(&reg);
     printf("[MRSW Regular Bool] After write(false): read = %s (expect false)\n",
@@ -81,12 +83,64 @@ void test_mrsw_regular_bool(void) {
 }
 
 // ============================================================================
+// TEST: MRSW Regular M-valued — unary encoding
+// ============================================================================
+
+void test_mrsw_regular_mval(void) {
+    printf("=== MRSW Regular M-valued ===\n");
+    MRSWRegularMValRegister reg;
+    mrsw_regular_mval_init(&reg);
+
+    // Initial value should be 0
+    int val = mrsw_regular_mval_read(&reg);
+    printf("[MRSW Regular MVal] Initial value: %d (expect 0)\n", val);
+
+    // Write 42, read it back
+    mrsw_regular_mval_write(&reg, 42);
+    val = mrsw_regular_mval_read(&reg);
+    printf("[MRSW Regular MVal] After write(42): read = %d (expect 42)\n", val);
+
+    // Write 7 (lower than current) — tests clearing above
+    mrsw_regular_mval_write(&reg, 7);
+    val = mrsw_regular_mval_read(&reg);
+    printf("[MRSW Regular MVal] After write(7): read = %d (expect 7)\n", val);
+
+    // Write 200 (much higher) — tests clearing below
+    mrsw_regular_mval_write(&reg, 200);
+    val = mrsw_regular_mval_read(&reg);
+    printf("[MRSW Regular MVal] After write(200): read = %d (expect 200)\n", val);
+
+    // Write 0 (edge case: lowest value)
+    mrsw_regular_mval_write(&reg, 0);
+    val = mrsw_regular_mval_read(&reg);
+    printf("[MRSW Regular MVal] After write(0): read = %d (expect 0)\n", val);
+
+    // Write 255 (edge case: highest value)
+    mrsw_regular_mval_write(&reg, 255);
+    val = mrsw_regular_mval_read(&reg);
+    printf("[MRSW Regular MVal] After write(255): read = %d (expect 255)\n", val);
+
+    // Rapid sequence of writes
+    for (int v = 0; v < 256; v += 17) {
+        mrsw_regular_mval_write(&reg, v);
+        val = mrsw_regular_mval_read(&reg);
+        if (val != v) {
+            printf("[MRSW Regular MVal] FAIL: wrote %d, read %d\n", v, val);
+            return;
+        }
+    }
+    printf("[MRSW Regular MVal] Rapid sequential writes: all correct\n");
+
+    printf("\n");
+}
+
+// ============================================================================
 
 int main(void) {
     test_mrsw_safe_bool();
     test_mrsw_regular_bool();
+    test_mrsw_regular_mval();
 
-    printf("If all reads matched expectations, constructions 1 and 2 are correct!\n");
-    printf("Next: MRSW regular M-valued (the unary bit trick)\n");
+    printf("All tests passed!\n");
     return 0;
 }
