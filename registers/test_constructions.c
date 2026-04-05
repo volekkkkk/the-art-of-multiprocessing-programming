@@ -3,6 +3,7 @@
 #include "mrsw_safe_bool.h"
 #include "mrsw_regular_bool.h"
 #include "mrsw_regular_mval.h"
+#include "srsw_atomic.h"
 #include <unistd.h>
 
 // ============================================================================
@@ -135,11 +136,51 @@ void test_mrsw_regular_mval(void) {
 }
 
 // ============================================================================
+// TEST: SRSW Atomic — timestamps prevent going backwards
+// ============================================================================
+
+void test_srsw_atomic(void) {
+    printf("=== SRSW Atomic ===\n");
+    SRSWAtomicRegister reg;
+    srsw_atomic_init(&reg, 0);
+
+    // Basic read/write
+    int val = srsw_atomic_read(&reg);
+    printf("[SRSW Atomic] Initial: %d (expect 0)\n", val);
+
+    srsw_atomic_write(&reg, 42);
+    val = srsw_atomic_read(&reg);
+    printf("[SRSW Atomic] After write(42): %d (expect 42)\n", val);
+
+    srsw_atomic_write(&reg, 7);
+    val = srsw_atomic_read(&reg);
+    printf("[SRSW Atomic] After write(7): %d (expect 7)\n", val);
+
+    // Key property: timestamps increase monotonically
+    // Write a sequence, verify reads never go backwards
+    int last_read = -1;
+    for (int v = 0; v < 100; v += 3) {
+        srsw_atomic_write(&reg, v);
+        val = srsw_atomic_read(&reg);
+        if (val < last_read) {
+            printf("[SRSW Atomic] FAIL: read went backwards! %d -> %d\n",
+                   last_read, val);
+            return;
+        }
+        last_read = val;
+    }
+    printf("[SRSW Atomic] Monotonic reads: all correct\n");
+
+    printf("\n");
+}
+
+// ============================================================================
 
 int main(void) {
     test_mrsw_safe_bool();
     test_mrsw_regular_bool();
     test_mrsw_regular_mval();
+    test_srsw_atomic();
 
     printf("All tests passed!\n");
     return 0;
