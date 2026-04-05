@@ -3,7 +3,9 @@
 #include "mrsw_safe_bool.h"
 #include "mrsw_regular_bool.h"
 #include "mrsw_regular_mval.h"
+#include "register.h"
 #include "srsw_atomic.h"
+#include "mrsw_atomic.h"
 #include <unistd.h>
 
 // ============================================================================
@@ -175,12 +177,76 @@ void test_srsw_atomic(void) {
 }
 
 // ============================================================================
+// TEST: MRSW Atomic — readers must not go backwards across threads
+// ============================================================================
+
+MRSWAtomicRegister mrsw_atomic_reg;
+
+void *mrsw_atomic_reader(void *arg) {
+    int id = *(int *)arg;
+    set_thread_id(id);
+
+    for (int round = 0; round < 5; round++) {
+        int val = mrsw_atomic_read(&mrsw_atomic_reg);
+        printf("[MRSW Atomic] Reader %d round %d: value=%d\n", id, round, val);
+        usleep(1000);
+    }
+    return NULL;
+}
+
+void test_mrsw_atomic(void) {
+    printf("=== MRSW Atomic ===\n");
+    int num_readers = MAX_THREADS;
+    mrsw_atomic_init(&mrsw_atomic_reg, 0);
+
+    // Sequential: write then all readers read
+    mrsw_atomic_write(&mrsw_atomic_reg, 99);
+
+    for (int i = 0; i < num_readers; i++) {
+        set_thread_id(i);
+        int val = mrsw_atomic_read(&mrsw_atomic_reg);
+        printf("[MRSW Atomic] Sequential reader %d: %d (expect 99)\n", i, val);
+    }
+
+    // Write new value, verify all readers see it
+    mrsw_atomic_write(&mrsw_atomic_reg, 200);
+    for (int i = 0; i < num_readers; i++) {
+        set_thread_id(i);
+        int val = mrsw_atomic_read(&mrsw_atomic_reg);
+        printf("[MRSW Atomic] After write(200), reader %d: %d (expect 200)\n", i, val);
+    }
+
+    // Concurrent readers — just verify no crashes and print values
+    printf("[MRSW Atomic] Launching concurrent readers...\n");
+    mrsw_atomic_write(&mrsw_atomic_reg, 42);
+
+    pthread_t readers[8];
+    int ids[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    for (int i = 0; i < num_readers; i++) {
+        pthread_create(&readers[i], NULL, mrsw_atomic_reader, &ids[i]);
+    }
+
+    // Writer keeps writing while readers run
+    for (int v = 50; v <= 70; v++) {
+        mrsw_atomic_write(&mrsw_atomic_reg, v);
+        usleep(500);
+    }
+
+    for (int i = 0; i < num_readers; i++) {
+        pthread_join(readers[i], NULL);
+    }
+
+    printf("\n");
+}
+
+// ============================================================================
 
 int main(void) {
     test_mrsw_safe_bool();
     test_mrsw_regular_bool();
     test_mrsw_regular_mval();
     test_srsw_atomic();
+    test_mrsw_atomic();
 
     printf("All tests passed!\n");
     return 0;
