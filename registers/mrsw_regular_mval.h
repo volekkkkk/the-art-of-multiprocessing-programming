@@ -27,36 +27,37 @@
 
 #include "register.h"
 
-#define MVAL_RANGE 256  // M — the range of values [0, M-1]
+#define MVAL_RANGE 256 // M — the range of values [0, M-1]
 
 typedef struct {
-    bool r_bit[MVAL_RANGE];  // array of MRSW regular Boolean registers
+  bool r_bit[MVAL_RANGE]; // array of MRSW regular Boolean registers
 } MRSWRegularMValRegister;
 
 static inline void mrsw_regular_mval_init(MRSWRegularMValRegister *reg) {
-    for (int i = 0; i < MVAL_RANGE; i++) {
-        reg->r_bit[i] = false;
-    }
-    reg->r_bit[0] = true;  // initial value is 0
+  for (int i = 0; i < MVAL_RANGE; i++) {
+    reg->r_bit[i] = false;
+  }
+  reg->r_bit[0] = true; // initial value is 0
 }
 
 static inline int mrsw_regular_mval_read(MRSWRegularMValRegister *reg) {
-    // Scan from low to high, return first true
-    for (int i = 0; i < MVAL_RANGE; i++) {
-        if (reg->r_bit[i]) {
-            return i;
-        }
+  // Scan from low to high, return first true
+  for (int i = 0; i < MVAL_RANGE; i++) {
+    if (reg->r_bit[i]) {
+      return i;
     }
-    // Should never reach here if register is used correctly
-    return 0;
+  }
+  // Should never reach here if register is used correctly
+  return 0;
 }
 
-static inline void mrsw_regular_mval_write(MRSWRegularMValRegister *reg, int x) {
-    // Set r_bit[x] to true and clear all other bits.
-	reg->r_bit[x] = true;
-	for (int i = x - 1; i >= 0; i--) {
-		reg->r_bit[i] = false;
-	}
+static inline void mrsw_regular_mval_write(MRSWRegularMValRegister *reg,
+                                           int x) {
+  // Set r_bit[x] to true and clear all other bits.
+  reg->r_bit[x] = true;
+  for (int i = x - 1; i >= 0; i--) {
+    reg->r_bit[i] = false;
+  }
 }
 
 #endif

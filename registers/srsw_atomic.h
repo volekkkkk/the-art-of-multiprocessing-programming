@@ -38,26 +38,26 @@
 #include "register.h"
 
 typedef struct {
-    StampedValue r_value;       // underlying MRSW regular register (stamped)
-    StampedValue last_read;     // reader's memory of highest-stamped value seen
-    long         last_stamp;    // writer's last used timestamp
+  StampedValue r_value;   // underlying MRSW regular register (stamped)
+  StampedValue last_read; // reader's memory of highest-stamped value seen
+  long last_stamp;        // writer's last used timestamp
 } SRSWAtomicRegister;
 
 static inline void srsw_atomic_init(SRSWAtomicRegister *reg, int init_val) {
-    reg->r_value   = (StampedValue){ .stamp = 0, .value = init_val };
-    reg->last_read = (StampedValue){ .stamp = 0, .value = init_val };
-    reg->last_stamp = 0;
+  reg->r_value = (StampedValue){.stamp = 0, .value = init_val};
+  reg->last_read = (StampedValue){.stamp = 0, .value = init_val};
+  reg->last_stamp = 0;
 }
 
 static inline int srsw_atomic_read(SRSWAtomicRegister *reg) {
-	StampedValue r_value = stamped_max(reg->r_value, reg->last_read);
-	reg->last_read = r_value;
-    return r_value.value;
+  StampedValue r_value = stamped_max(reg->r_value, reg->last_read);
+  reg->last_read = r_value;
+  return r_value.value;
 }
 
 static inline void srsw_atomic_write(SRSWAtomicRegister *reg, int x) {
-	reg->last_stamp++;
-	reg->r_value = (StampedValue){ .stamp=reg->last_stamp, .value = x};
+  reg->last_stamp++;
+  reg->r_value = (StampedValue){.stamp = reg->last_stamp, .value = x};
 }
 
 #endif

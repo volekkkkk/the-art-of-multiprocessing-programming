@@ -31,26 +31,27 @@
 #include "register.h"
 
 typedef struct {
-    bool s_value;           // underlying MRSW safe Boolean register
-    bool last_written;      // writer's memory of last value written
+  bool s_value;      // underlying MRSW safe Boolean register
+  bool last_written; // writer's memory of last value written
 } MRSWRegularBoolRegister;
 
 static inline void mrsw_regular_bool_init(MRSWRegularBoolRegister *reg) {
-    reg->s_value = false;
-    reg->last_written = false;
+  reg->s_value = false;
+  reg->last_written = false;
 }
 
 static inline bool mrsw_regular_bool_read(MRSWRegularBoolRegister *reg) {
-    // Straightforward — just read the underlying register
-    return reg->s_value;
+  // Straightforward — just read the underlying register
+  return reg->s_value;
 }
 
-static inline void mrsw_regular_bool_write(MRSWRegularBoolRegister *reg, bool x) {
-    // Only write to s_value if x differs from last_written
-	if (x != reg->last_written){
-		reg->last_written = x;
-		reg->s_value = x;
-	}
+static inline void mrsw_regular_bool_write(MRSWRegularBoolRegister *reg,
+                                           bool x) {
+  // Only write to s_value if x differs from last_written
+  if (x != reg->last_written) {
+    reg->last_written = x;
+    reg->s_value = x;
+  }
 }
 
 #endif

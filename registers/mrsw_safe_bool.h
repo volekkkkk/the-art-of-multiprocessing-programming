@@ -20,27 +20,28 @@
 #include "register.h"
 
 typedef struct {
-    bool s_table[MAX_THREADS]; // one SRSW safe Boolean register per reader
-    int  num_readers;
+  bool s_table[MAX_THREADS]; // one SRSW safe Boolean register per reader
+  int num_readers;
 } MRSWSafeBoolRegister;
 
-static inline void mrsw_safe_bool_init(MRSWSafeBoolRegister *reg, int num_readers) {
-    reg->num_readers = num_readers;
-    for (int i = 0; i < num_readers; i++) {
-        reg->s_table[i] = false;
-    }
+static inline void mrsw_safe_bool_init(MRSWSafeBoolRegister *reg,
+                                       int num_readers) {
+  reg->num_readers = num_readers;
+  for (int i = 0; i < num_readers; i++) {
+    reg->s_table[i] = false;
+  }
 }
 
 static inline bool mrsw_safe_bool_read(MRSWSafeBoolRegister *reg) {
-	int thread_id = get_thread_id();
-	bool res = reg->s_table[thread_id];
-    return res;
+  int thread_id = get_thread_id();
+  bool res = reg->s_table[thread_id];
+  return res;
 }
 
 static inline void mrsw_safe_bool_write(MRSWSafeBoolRegister *reg, bool x) {
-	for (int i = 0; i < reg->num_readers; i++) {
-		reg->s_table[i] = x;
-	}
+  for (int i = 0; i < reg->num_readers; i++) {
+    reg->s_table[i] = x;
+  }
 }
 
 #endif

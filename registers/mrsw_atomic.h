@@ -44,48 +44,48 @@
 #include "register.h"
 
 typedef struct {
-    StampedValue a_table[MAX_THREADS][MAX_THREADS]; // n×n SRSW atomic registers
-    long         last_stamp;  // writer's timestamp counter
+  StampedValue a_table[MAX_THREADS][MAX_THREADS]; // n×n SRSW atomic registers
+  long last_stamp;                                // writer's timestamp counter
 } MRSWAtomicRegister;
 
 static inline void mrsw_atomic_init(MRSWAtomicRegister *reg, int init_val) {
-    reg->last_stamp = 0;
-    StampedValue init = { .stamp = 0, .value = init_val };
-    for (int i = 0; i < MAX_THREADS; i++) {
-        for (int j = 0; j < MAX_THREADS; j++) {
-            reg->a_table[i][j] = init;
-        }
+  reg->last_stamp = 0;
+  StampedValue init = {.stamp = 0, .value = init_val};
+  for (int i = 0; i < MAX_THREADS; i++) {
+    for (int j = 0; j < MAX_THREADS; j++) {
+      reg->a_table[i][j] = init;
     }
+  }
 }
 
 static inline int mrsw_atomic_read(MRSWAtomicRegister *reg) {
-    int me = get_thread_id();
-	
-	StampedValue r_value = reg->a_table[me][me];
-	for (int i = 0; i < MAX_THREADS; i++) {
-		if (i == me) {
-			continue;
-		}
+  int me = get_thread_id();
 
-		r_value = stamped_max(r_value, reg->a_table[i][me]);
-	}
+  StampedValue r_value = reg->a_table[me][me];
+  for (int i = 0; i < MAX_THREADS; i++) {
+    if (i == me) {
+      continue;
+    }
 
-	for (int i = 0; i < MAX_THREADS; i++) {
-		if (i == me) {
-			continue;
-		}
+    r_value = stamped_max(r_value, reg->a_table[i][me]);
+  }
 
-		reg->a_table[me][i] = r_value;
-	}
+  for (int i = 0; i < MAX_THREADS; i++) {
+    if (i == me) {
+      continue;
+    }
 
-    return r_value.value;
+    reg->a_table[me][i] = r_value;
+  }
+
+  return r_value.value;
 }
 
 static inline void mrsw_atomic_write(MRSWAtomicRegister *reg, int x) {
-	reg->last_stamp++;
-	for (int i=0; i < MAX_THREADS; i++){
-		reg->a_table[i][i] = (StampedValue){ .stamp = reg->last_stamp, .value = x};
-	}
+  reg->last_stamp++;
+  for (int i = 0; i < MAX_THREADS; i++) {
+    reg->a_table[i][i] = (StampedValue){.stamp = reg->last_stamp, .value = x};
+  }
 }
 
 #endif
