@@ -1,5 +1,6 @@
 // test_constructions.c
 // Compile: gcc -pthread -o test_constructions test_constructions.c
+#include "mrmw_atomic.h"
 #include "mrsw_atomic.h"
 #include "mrsw_regular_bool.h"
 #include "mrsw_regular_mval.h"
@@ -242,6 +243,75 @@ void test_mrsw_atomic(void) {
 }
 
 // ============================================================================
+// TEST: MRMW Atomic — multiple writers, total order
+// ============================================================================
+
+MRMWAtomicRegister mrmw_reg;
+
+void *mrmw_writer(void *arg) {
+  int id = *(int *)arg;
+  set_thread_id(id);
+
+  // Each writer writes its own id * 100 + round
+  for (int round = 0; round < 5; round++) {
+    int val = id * 100 + round;
+    mrmw_atomic_write(&mrmw_reg, val);
+    printf("[MRMW Atomic] Writer %d wrote %d\n", id, val);
+    usleep(500);
+  }
+  return NULL;
+}
+
+void test_mrmw_atomic(void) {
+  printf("=== MRMW Atomic ===\n");
+  mrmw_atomic_init(&mrmw_reg, 0);
+
+  // Sequential: different threads write, then read
+  set_thread_id(0);
+  mrmw_atomic_write(&mrmw_reg, 10);
+  set_thread_id(1);
+  mrmw_atomic_write(&mrmw_reg, 20);
+  set_thread_id(2);
+  mrmw_atomic_write(&mrmw_reg, 30);
+
+  // All readers should see 30 (the latest write)
+  for (int i = 0; i < 4; i++) {
+    set_thread_id(i);
+    int val = mrmw_atomic_read(&mrmw_reg);
+    printf("[MRMW Atomic] Reader %d: %d (expect 30)\n", i, val);
+  }
+
+  // Concurrent writers
+  printf("[MRMW Atomic] Launching concurrent writers...\n");
+  pthread_t writers[3];
+  int ids[3] = {0, 1, 2};
+  for (int i = 0; i < 3; i++) {
+    pthread_create(&writers[i], NULL, mrmw_writer, &ids[i]);
+  }
+  for (int i = 0; i < 3; i++) {
+    pthread_join(writers[i], NULL);
+  }
+
+  // After all writers finish, all readers should agree
+  int first_val = -1;
+  for (int i = 0; i < MAX_THREADS; i++) {
+    set_thread_id(i);
+    int val = mrmw_atomic_read(&mrmw_reg);
+    if (first_val == -1)
+      first_val = val;
+    if (val != first_val) {
+      printf(
+          "[MRMW Atomic] FAIL: readers disagree! reader 0=%d, reader %d=%d\n",
+          first_val, i, val);
+      return;
+    }
+  }
+  printf("[MRMW Atomic] All readers agree on final value: %d\n", first_val);
+
+  printf("\n");
+}
+
+// ============================================================================
 
 int main(void) {
   test_mrsw_safe_bool();
@@ -249,6 +319,7 @@ int main(void) {
   test_mrsw_regular_mval();
   test_srsw_atomic();
   test_mrsw_atomic();
+  test_mrmw_atomic();
 
   printf("All tests passed!\n");
   return 0;
