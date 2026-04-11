@@ -47,22 +47,32 @@ static inline void mrmw_atomic_init(MRMWAtomicRegister *reg, int init_val) {
 }
 
 static inline int mrmw_atomic_read(MRMWAtomicRegister *reg) {
-  StampedValue value = STAMPED_INIT;
+  StampedValue recent = STAMPED_INIT;
+  int recent_indx = 0;
+
   for (int i = 0; i < MAX_THREADS; i++) {
-    value = stamped_max(value, reg->a_table[i]);
+    if (reg->a_table[i].stamp > recent.stamp ||
+        (reg->a_table[i].stamp == recent.stamp && i > recent_indx)) {
+      recent = reg->a_table[i];
+      recent_indx = i;
+    }
   }
-  return value.value;
+  return recent.value;
 }
 
 static inline void mrmw_atomic_write(MRMWAtomicRegister *reg, int x) {
   int me = get_thread_id();
 
-  StampedValue recent_value = STAMPED_INIT;
+  StampedValue recent = STAMPED_INIT;
+  int recent_indx = 0;
   for (int i = 0; i < MAX_THREADS; i++) {
-    recent_value = stamped_max(recent_value, reg->a_table[i]);
+    if (reg->a_table[i].stamp > recent.stamp ||
+        (reg->a_table[i].stamp == recent.stamp && i > recent_indx)) {
+      recent = reg->a_table[i];
+      recent_indx = i;
+    }
   }
-  reg->a_table[me] =
-      (StampedValue){.stamp = recent_value.stamp + 1, .value = x};
+  reg->a_table[me] = (StampedValue){.stamp = recent.stamp + 1, .value = x};
 }
 
 #endif

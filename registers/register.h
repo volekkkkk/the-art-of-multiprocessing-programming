@@ -31,10 +31,20 @@ typedef struct {
   int value;
 } StampedValue;
 
+#define STAMPED_INIT {.stamp = 0, .value = 0}
+
 static inline StampedValue stamped_max(StampedValue a, StampedValue b) {
   return (a.stamp > b.stamp) ? a : b;
 }
 
-#define STAMPED_INIT {.stamp = 0, .value = 0}
+static inline StampedValue stamped_max_total_order(StampedValue a,
+                                                   StampedValue b,
+                                                   int a_thread_id,
+                                                   int b_thread_id) {
+  if (a.stamp != b.stamp) {
+    return stamped_max(a, b);
+  }
+  return (a_thread_id > b_thread_id) ? a : b;
+}
 
 #endif // REGISTER_H
