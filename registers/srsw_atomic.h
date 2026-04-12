@@ -29,7 +29,6 @@
 //       "last read" memory is private (no sharing between readers).
 //       Construction #5 extends this to MRSW.
 //
-// EXERCISE: Fill in read() and write()
 // ============================================================================
 
 #ifndef SRSW_ATOMIC_H

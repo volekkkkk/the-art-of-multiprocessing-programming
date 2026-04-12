@@ -19,3 +19,14 @@ Each construction builds a stronger register from weaker ones.
 ## Shared
 
 - `register.h` — common types, thread ID, StampedValue
+
+## Note on composition
+ 
+Each step conceptually wraps the register type from the previous step (e.g.
+step 2 should use a `MRSWSafeBoolRegister` from step 1 as its underlying
+storage, step 3's bit array should be `MRSWRegularBoolRegister` instances,
+etc.). In this implementation, we use plain C types (`bool`, `StampedValue`)
+instead of actual struct composition. This matches the book's approach — it
+uses naming conventions (`s_` for safe, `r_` for regular, `a_` for atomic)
+rather than nesting the actual types. The algorithms and their correctness
+arguments are the same either way.
