@@ -6,6 +6,7 @@
 #include "mrsw_regular_mval.h"
 #include "mrsw_safe_bool.h"
 #include "register.h"
+#include "snapshot_obsfree.h"
 #include "srsw_atomic.h"
 #include <unistd.h>
 
@@ -312,6 +313,56 @@ void test_mrmw_atomic(void) {
 }
 
 // ============================================================================
+// TEST: Obstruction-free Atomic Snapshot
+// ============================================================================
+
+void test_obsfree_snapshot(void) {
+  printf("=== Obstruction-free Atomic Snapshot ===\n");
+
+  ObsFreeSnapshot snap_reg;
+  obsfree_snapshot_init(&snap_reg, 0);
+
+  // Each thread updates its own slot
+  set_thread_id(0);
+  obsfree_update(&snap_reg, 10);
+  set_thread_id(1);
+  obsfree_update(&snap_reg, 20);
+  set_thread_id(2);
+  obsfree_update(&snap_reg, 30);
+
+  // Scan should see all updates
+  set_thread_id(0);
+  SnapResult result = obsfree_scan(&snap_reg);
+  printf("[Snapshot] scan: [%d, %d, %d, %d, %d, %d, %d, %d]\n",
+         result.values[0], result.values[1], result.values[2], result.values[3],
+         result.values[4], result.values[5], result.values[6],
+         result.values[7]);
+  printf("[Snapshot] expect: [10, 20, 30, 0, 0, 0, 0, 0]\n");
+
+  // Update slot 3 and rescan
+  set_thread_id(3);
+  obsfree_update(&snap_reg, 99);
+  set_thread_id(0);
+  result = obsfree_scan(&snap_reg);
+  printf("[Snapshot] after update(3, 99): slot[3] = %d (expect 99)\n",
+         result.values[3]);
+
+  // Multiple updates to same slot — scan sees latest
+  set_thread_id(1);
+  obsfree_update(&snap_reg, 21);
+  set_thread_id(1);
+  obsfree_update(&snap_reg, 22);
+  set_thread_id(1);
+  obsfree_update(&snap_reg, 23);
+  set_thread_id(0);
+  result = obsfree_scan(&snap_reg);
+  printf("[Snapshot] after 3 updates to slot 1: %d (expect 23)\n",
+         result.values[1]);
+
+  printf("\n");
+}
+
+// ============================================================================
 
 int main(void) {
   test_mrsw_safe_bool();
@@ -320,6 +371,7 @@ int main(void) {
   test_srsw_atomic();
   test_mrsw_atomic();
   test_mrmw_atomic();
+  test_obsfree_snapshot();
 
   printf("All tests passed!\n");
   return 0;
