@@ -1,5 +1,4 @@
 // test_constructions.c
-// Compile: gcc -pthread -o test_constructions test_constructions.c
 #include "mrmw_atomic.h"
 #include "mrsw_atomic.h"
 #include "mrsw_regular_bool.h"
@@ -7,6 +6,7 @@
 #include "mrsw_safe_bool.h"
 #include "register.h"
 #include "snapshot_obsfree.h"
+#include "snapshot_waitfree.h"
 #include "srsw_atomic.h"
 #include <unistd.h>
 
@@ -333,19 +333,21 @@ void test_obsfree_snapshot(void) {
   // Scan should see all updates
   set_thread_id(0);
   SnapResult result = obsfree_scan(&snap_reg);
-  printf("[Snapshot] scan: [%d, %d, %d, %d, %d, %d, %d, %d]\n",
-         result.values[0], result.values[1], result.values[2], result.values[3],
-         result.values[4], result.values[5], result.values[6],
-         result.values[7]);
-  printf("[Snapshot] expect: [10, 20, 30, 0, 0, 0, 0, 0]\n");
+  assert(result.values[0] == 10);
+  assert(result.values[1] == 20);
+  assert(result.values[2] == 30);
+  for (int i = 3; i < MAX_THREADS; i++) {
+    assert(result.values[i] == 0);
+  }
+  printf("[Snapshot] basic scan: OK\n");
 
   // Update slot 3 and rescan
   set_thread_id(3);
   obsfree_update(&snap_reg, 99);
   set_thread_id(0);
   result = obsfree_scan(&snap_reg);
-  printf("[Snapshot] after update(3, 99): slot[3] = %d (expect 99)\n",
-         result.values[3]);
+  assert(result.values[3] == 99);
+  printf("[Snapshot] after update(3, 99): OK\n");
 
   // Multiple updates to same slot — scan sees latest
   set_thread_id(1);
@@ -356,10 +358,196 @@ void test_obsfree_snapshot(void) {
   obsfree_update(&snap_reg, 23);
   set_thread_id(0);
   result = obsfree_scan(&snap_reg);
-  printf("[Snapshot] after 3 updates to slot 1: %d (expect 23)\n",
-         result.values[1]);
+  assert(result.values[1] == 23);
+  printf("[Snapshot] multiple updates to slot 1: OK\n");
 
   printf("\n");
+}
+
+// ============================================================================
+// TEST: Wait-free Atomic Snapshot
+// ============================================================================
+
+void test_waitfree_snapshot(void) {
+  printf("=== Wait-free Atomic Snapshot ===\n");
+
+  WaitFreeSnapshot wf_reg;
+  wf_snapshot_init(&wf_reg, 0);
+
+  // Each thread updates its own slot
+  set_thread_id(0);
+  wf_update(&wf_reg, 10);
+  set_thread_id(1);
+  wf_update(&wf_reg, 20);
+  set_thread_id(2);
+  wf_update(&wf_reg, 30);
+
+  // Scan should see all updates
+  set_thread_id(0);
+  WFSnapResult result = wf_scan(&wf_reg);
+  assert(result.values[0] == 10);
+  assert(result.values[1] == 20);
+  assert(result.values[2] == 30);
+  for (int i = 3; i < MAX_THREADS; i++) {
+    assert(result.values[i] == 0);
+  }
+  printf("[WF Snapshot] basic scan: OK\n");
+
+  // Update slot 3 and rescan
+  set_thread_id(3);
+  wf_update(&wf_reg, 99);
+  set_thread_id(0);
+  result = wf_scan(&wf_reg);
+  assert(result.values[3] == 99);
+  printf("[WF Snapshot] after update(3, 99): OK\n");
+
+  // Multiple updates to same slot — scan sees latest
+  set_thread_id(1);
+  wf_update(&wf_reg, 21);
+  set_thread_id(1);
+  wf_update(&wf_reg, 22);
+  set_thread_id(1);
+  wf_update(&wf_reg, 23);
+  set_thread_id(0);
+  result = wf_scan(&wf_reg);
+  assert(result.values[1] == 23);
+  printf("[WF Snapshot] multiple updates to slot 1: OK\n");
+
+  printf("\n");
+}
+
+// ============================================================================
+// CONCURRENT TESTS for snapshots
+// ============================================================================
+// Invariant checked:
+//   Each updater writes strictly increasing values to its slot.
+//   Each scanner takes repeated snapshots and verifies:
+//     - No slot's value ever goes BACKWARDS between consecutive scans
+//     - Each value seen was actually written by the corresponding thread
+//       (value % 1000 == thread_id)
+
+// ---------- Obstruction-free concurrent test ----------
+
+ObsFreeSnapshot conc_obsfree;
+
+void *obsfree_updater(void *arg) {
+  int id = *(int *)arg;
+  set_thread_id(id);
+  for (int i = 1; i <= 200; i++) {
+    obsfree_update(&conc_obsfree, id * 1000 + i);
+  }
+  return NULL;
+}
+
+void *obsfree_scanner(void *arg) {
+  int id = *(int *)arg;
+  set_thread_id(id);
+
+  int prev[MAX_THREADS] = {0};
+
+  for (int round = 0; round < 100; round++) {
+    SnapResult snap = obsfree_scan(&conc_obsfree);
+
+    for (int i = 0; i < MAX_THREADS; i++) {
+      int val = snap.values[i];
+
+      // Value must never go backwards
+      assert(val >= prev[i]);
+
+      // Value must be either 0 (initial) or written by thread i
+      if (val != 0) {
+        assert(val / 1000 == i);
+      }
+
+      prev[i] = val;
+    }
+  }
+  return NULL;
+}
+
+void test_obsfree_concurrent(void) {
+  printf("=== Obstruction-free Snapshot (concurrent) ===\n");
+  obsfree_snapshot_init(&conc_obsfree, 0);
+
+  // 4 updaters (threads 0-3), 4 scanners (threads 4-7)
+  pthread_t threads[MAX_THREADS];
+  int ids[MAX_THREADS];
+  for (int i = 0; i < MAX_THREADS; i++)
+    ids[i] = i;
+
+  for (int i = 0; i < 4; i++) {
+    pthread_create(&threads[i], NULL, obsfree_updater, &ids[i]);
+  }
+  for (int i = 4; i < MAX_THREADS; i++) {
+    pthread_create(&threads[i], NULL, obsfree_scanner, &ids[i]);
+  }
+  for (int i = 0; i < MAX_THREADS; i++) {
+    pthread_join(threads[i], NULL);
+  }
+
+  printf("[Snapshot Concurrent] all scans consistent, no backward values\n\n");
+}
+
+// ---------- Wait-free concurrent test ----------
+
+WaitFreeSnapshot conc_waitfree;
+
+void *wf_updater(void *arg) {
+  int id = *(int *)arg;
+  set_thread_id(id);
+  for (int i = 1; i <= 200; i++) {
+    wf_update(&conc_waitfree, id * 1000 + i);
+  }
+  return NULL;
+}
+
+void *wf_scanner(void *arg) {
+  int id = *(int *)arg;
+  set_thread_id(id);
+
+  int prev[MAX_THREADS] = {0};
+
+  for (int round = 0; round < 100; round++) {
+    WFSnapResult snap = wf_scan(&conc_waitfree);
+
+    for (int i = 0; i < MAX_THREADS; i++) {
+      int val = snap.values[i];
+
+      // Value must never go backwards
+      assert(val >= prev[i]);
+
+      // Value must be either 0 (initial) or written by thread i
+      if (val != 0) {
+        assert(val / 1000 == i);
+      }
+
+      prev[i] = val;
+    }
+  }
+  return NULL;
+}
+
+void test_waitfree_concurrent(void) {
+  printf("=== Wait-free Snapshot (concurrent) ===\n");
+  wf_snapshot_init(&conc_waitfree, 0);
+
+  pthread_t threads[MAX_THREADS];
+  int ids[MAX_THREADS];
+  for (int i = 0; i < MAX_THREADS; i++)
+    ids[i] = i;
+
+  for (int i = 0; i < 4; i++) {
+    pthread_create(&threads[i], NULL, wf_updater, &ids[i]);
+  }
+  for (int i = 4; i < MAX_THREADS; i++) {
+    pthread_create(&threads[i], NULL, wf_scanner, &ids[i]);
+  }
+  for (int i = 0; i < MAX_THREADS; i++) {
+    pthread_join(threads[i], NULL);
+  }
+
+  printf(
+      "[WF Snapshot Concurrent] all scans consistent, no backward values\n\n");
 }
 
 // ============================================================================
@@ -372,6 +560,9 @@ int main(void) {
   test_mrsw_atomic();
   test_mrmw_atomic();
   test_obsfree_snapshot();
+  test_waitfree_snapshot();
+  test_obsfree_concurrent();
+  test_waitfree_concurrent();
 
   printf("All tests passed!\n");
   return 0;

@@ -16,6 +16,13 @@ Each construction builds a stronger register from weaker ones.
 | 5 | SRSW atomic           | MRSW atomic           | `mrsw_atomic.h`           | Readers help readers (n×n table)|
 | 6 | MRSW atomic           | MRMW atomic           | `mrmw_atomic.h`           | Writer timestamps               |
 
+## Atomic Snapshots
+
+| Type              | File                   | Key idea                              |
+|-------------------|------------------------|---------------------------------------|
+| Obstruction-free  | `snapshot_obsfree.h`   | Double collect — retry until matching |
+| Wait-free         | `snapshot_waitfree.h`  | Embedded snapshots + pigeonhole       |
+
 ## Shared
 
 - `register.h` — common types, thread ID, StampedValue
