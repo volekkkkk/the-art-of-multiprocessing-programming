@@ -1,0 +1,27 @@
+version: '3'
+
+vars:
+  CC: gcc
+  CFLAGS: -std=c11 -Wall -Wextra -pthread
+  BUILD_DIR: build
+
+tasks:
+  build:
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - '{{.CC}} {{.CFLAGS}} -o {{.BUILD_DIR}}/protocol protocol.c'
+    sources:
+      - protocol.c
+      - consensus.h
+      - consensus_test.h
+    generates:
+      - '{{.BUILD_DIR}}/protocol'
+
+  run:
+    deps: [build]
+    cmds:
+      - ./{{.BUILD_DIR}}/protocol
+
+  clean:
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
