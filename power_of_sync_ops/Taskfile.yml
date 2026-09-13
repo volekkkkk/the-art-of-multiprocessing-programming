@@ -2,7 +2,7 @@ version: '3'
 
 vars:
   CC: gcc
-  CFLAGS: -std=c11 -Wall -Wextra -pthread
+  CFLAGS: -std=c11 -Wall -Wextra -pthread -Wstrict-prototypes
   BUILD_DIR: build
 
 tasks:
