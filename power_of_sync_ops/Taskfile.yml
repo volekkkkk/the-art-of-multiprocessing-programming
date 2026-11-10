@@ -9,18 +9,36 @@ tasks:
   build:
     cmds:
       - mkdir -p {{.BUILD_DIR}}
-      - '{{.CC}} {{.CFLAGS}} -o {{.BUILD_DIR}}/protocol protocol.c'
+      - '{{.CC}} {{.CFLAGS}} -o {{.BUILD_DIR}}/protocol main.c protocol.c'
     sources:
+      - main.c
       - protocol.c
       - consensus.h
       - consensus_test.h
     generates:
       - '{{.BUILD_DIR}}/protocol'
 
+  build-atomic-register:
+    cmds:
+      - mkdir -p {{.BUILD_DIR}}
+      - '{{.CC}} {{.CFLAGS}} -o {{.BUILD_DIR}}/atomic_register main.c atomic_register.c'
+    sources:
+      - main.c
+      - atomic_register.c
+      - consensus.h
+      - consensus_test.h
+    generates:
+      - '{{.BUILD_DIR}}/atomic_register'
+
   run:
     deps: [build]
     cmds:
       - ./{{.BUILD_DIR}}/protocol
+
+  run-atomic-register:
+    deps: [build-atomic-register]
+    cmds:
+      - ./{{.BUILD_DIR}}/atomic_register
 
   clean:
     cmds:
